@@ -10,13 +10,20 @@
         "startup",
         "bootloader",
         "grub",
-        "multiboot"
+        "multiboot",
+        "stage0",
+        "stage1"
       ],
-      "target_functions": 15,
-      "target_sloc": 500
+      "target_functions": 12,
+      "target_sloc": 5000,
+      "manifest_functions": [
+        "boot_init", "stage0_bootstrap", "stage1_init", "init_cpu", "init_memory_early",
+        "init_gdt", "init_idt_early", "load_kernel_image", "parse_multiboot",
+        "setup_initial_page_tables", "enable_paging", "jump_to_kernel"
+      ]
     },
     "scheduling": {
-      "weight": 15,
+      "weight": 9,
       "criticality": "critical",
       "description": "Process and thread scheduling algorithms",
       "evidence_cues": [
@@ -25,13 +32,21 @@
         "context_switch",
         "task_switch",
         "round_robin",
-        "priority"
+        "priority",
+        "sched_",
+        "runqueue"
       ],
-      "target_functions": 20,
-      "target_sloc": 800
+      "target_functions": 18,
+      "target_sloc": 8000,
+      "manifest_functions": [
+        "sched_init", "sched_tick", "schedule", "context_switch", "pick_next_task",
+        "enqueue_task", "dequeue_task", "set_task_priority", "get_current_task",
+        "yield_cpu", "sleep", "wake_up", "round_robin_schedule", "priority_schedule",
+        "init_runqueue", "add_to_runqueue", "remove_from_runqueue", "update_task_runtime"
+      ]
     },
     "process_thread_management": {
-      "weight": 15,
+      "weight": 8,
       "criticality": "critical",
       "description": "Process creation, destruction, and thread management",
       "evidence_cues": [
@@ -45,11 +60,19 @@
         "pcb",
         "tcb"
       ],
-      "target_functions": 25,
-      "target_sloc": 1000
+      "target_functions": 24,
+      "target_sloc": 10000,
+      "manifest_functions": [
+        "process_create", "process_destroy", "process_fork", "process_exec", "process_wait",
+        "process_exit", "process_kill", "thread_create", "thread_destroy", "thread_join",
+        "thread_detach", "get_process_by_pid", "get_thread_by_tid", "init_pcb", "init_tcb",
+        "clone_address_space", "setup_user_stack", "setup_kernel_stack", "copy_process_context",
+        "free_process_resources", "zombie_cleanup", "orphan_process_reparent", "signal_process",
+        "deliver_signal"
+      ]
     },
     "memory": {
-      "weight": 15,
+      "weight": 8,
       "criticality": "critical",
       "description": "Basic memory allocation and management",
       "evidence_cues": [
@@ -59,13 +82,22 @@
         "kfree",
         "heap",
         "memory_pool",
-        "slab"
+        "slab",
+        "alloc_page"
       ],
-      "target_functions": 18,
-      "target_sloc": 700
+      "target_functions": 24,
+      "target_sloc": 12000,
+      "manifest_functions": [
+        "kmalloc", "kfree", "vmalloc", "vfree", "alloc_page", "free_page",
+        "alloc_pages", "free_pages", "get_free_page", "__get_free_pages",
+        "slab_create", "slab_destroy", "slab_alloc", "slab_free",
+        "kmem_cache_create", "kmem_cache_destroy", "kmem_cache_alloc", "kmem_cache_free",
+        "init_memory_manager", "register_memory_region", "split_page_block",
+        "merge_page_blocks", "get_page_stats", "dump_memory_map"
+      ]
     },
     "interrupt_handling": {
-      "weight": 12,
+      "weight": 6,
       "criticality": "high",
       "description": "Interrupt and exception handling mechanisms",
       "evidence_cues": [
@@ -77,11 +109,18 @@
         "idt",
         "gdt"
       ],
-      "target_functions": 20,
-      "target_sloc": 600
+      "target_functions": 15,
+      "target_sloc": 6000,
+      "manifest_functions": [
+        "init_interrupts", "register_interrupt_handler", "unregister_interrupt_handler",
+        "do_irq", "irq_handler", "exception_handler", "setup_idt", "load_idt",
+        "enable_interrupts", "disable_interrupts", "save_interrupt_state",
+        "restore_interrupt_state", "handle_page_fault", "handle_div_by_zero",
+        "handle_general_protection_fault"
+      ]
     },
     "system_call_interface": {
-      "weight": 12,
+      "weight": 5,
       "criticality": "high",
       "description": "System call interface and handling",
       "evidence_cues": [
@@ -89,13 +128,22 @@
         "system_call",
         "sysenter",
         "int_0x80",
-        "syscall_table"
+        "syscall_table",
+        "sys_"
       ],
-      "target_functions": 30,
-      "target_sloc": 900
+      "target_functions": 32,
+      "target_sloc": 10000,
+      "manifest_functions": [
+        "syscall_init", "syscall_handler", "sys_read", "sys_write", "sys_open", "sys_close",
+        "sys_fork", "sys_exec", "sys_exit", "sys_wait", "sys_kill", "sys_getpid",
+        "sys_getppid", "sys_sbrk", "sys_mmap", "sys_munmap", "sys_ioctl", "sys_stat",
+        "sys_fstat", "sys_lseek", "sys_chdir", "sys_getcwd", "sys_mkdir", "sys_rmdir",
+        "sys_unlink", "sys_pipe", "sys_dup", "sys_dup2", "sys_signal", "sys_sigaction",
+        "sys_sleep", "register_syscall"
+      ]
     },
     "basic_io": {
-      "weight": 8,
+      "weight": 5,
       "criticality": "high",
       "description": "Basic input/output operations",
       "evidence_cues": [
@@ -108,11 +156,17 @@
         "console",
         "tty"
       ],
-      "target_functions": 15,
-      "target_sloc": 500
+      "target_functions": 20,
+      "target_sloc": 7000,
+      "manifest_functions": [
+        "io_init", "inb", "inw", "inl", "outb", "outw", "outl", "io_read", "io_write",
+        "io_read_buffer", "io_write_buffer", "mmio_read", "mmio_write", "port_map",
+        "port_unmap", "console_init", "console_putc", "console_puts", "console_getc",
+        "tty_write"
+      ]
     },
     "synchronisation": {
-      "weight": 10,
+      "weight": 4,
       "criticality": "high",
       "description": "Synchronization primitives (locks, semaphores, etc.)",
       "evidence_cues": [
@@ -124,11 +178,16 @@
         "atomic",
         "barrier"
       ],
-      "target_functions": 12,
-      "target_sloc": 400
+      "target_functions": 16,
+      "target_sloc": 4000,
+      "manifest_functions": [
+        "spinlock_init", "spinlock_acquire", "spinlock_release", "mutex_init", "mutex_lock",
+        "mutex_unlock", "mutex_trylock", "semaphore_init", "semaphore_wait", "semaphore_signal",
+        "atomic_read", "atomic_write", "atomic_inc", "atomic_dec", "barrier", "memory_barrier"
+      ]
     },
     "timers_clock": {
-      "weight": 8,
+      "weight": 3,
       "criticality": "medium",
       "description": "Timer and clock management",
       "evidence_cues": [
@@ -141,10 +200,14 @@
         "hpet"
       ],
       "target_functions": 10,
-      "target_sloc": 350
+      "target_sloc": 3000,
+      "manifest_functions": [
+        "timer_init", "timer_interrupt", "get_ticks", "set_timer", "cancel_timer",
+        "sleep_ticks", "clock_gettime", "clock_settime", "rtc_read", "rtc_write"
+      ]
     },
     "protection": {
-      "weight": 10,
+      "weight": 2,
       "criticality": "high",
       "description": "Memory protection and privilege levels",
       "evidence_cues": [
@@ -156,13 +219,19 @@
         "mmu",
         "tlb"
       ],
-      "target_functions": 12,
-      "target_sloc": 450
+      "target_functions": 14,
+      "target_sloc": 6000,
+      "manifest_functions": [
+        "mmu_init", "set_privilege_level", "switch_to_user_mode", "switch_to_kernel_mode",
+        "check_user_access", "validate_user_pointer", "copy_from_user", "copy_to_user",
+        "protect_kernel_memory", "tlb_flush", "tlb_flush_entry", "get_current_privilege",
+        "enable_memory_protection", "disable_memory_protection"
+      ]
     }
   },
   "os_platform_services": {
     "virtual_memory": {
-      "weight": 15,
+      "weight": 8,
       "criticality": "critical",
       "description": "Virtual memory management and paging",
       "evidence_cues": [
@@ -174,11 +243,20 @@
         "mmap",
         "swap"
       ],
-      "target_functions": 25,
-      "target_sloc": 1200
+      "target_functions": 28,
+      "target_sloc": 15000,
+      "manifest_functions": [
+        "vmm_init", "create_page_table", "destroy_page_table", "map_page", "unmap_page",
+        "map_pages", "unmap_pages", "get_physical_address", "handle_page_fault",
+        "alloc_page_table", "free_page_table", "clone_page_table", "setup_kernel_paging",
+        "setup_user_paging", "flush_tlb", "flush_tlb_single", "mark_page_present",
+        "mark_page_writable", "mark_page_user", "mark_page_executable", "get_page_flags",
+        "set_page_flags", "allocate_virtual_range", "free_virtual_range",
+        "map_physical_memory", "identity_map", "copy_on_write_handler", "swap_out_page"
+      ]
     },
     "driver_framework": {
-      "weight": 12,
+      "weight": 8,
       "criticality": "high",
       "description": "Device driver framework and management",
       "evidence_cues": [
@@ -190,11 +268,21 @@
         "pci",
         "usb"
       ],
-      "target_functions": 20,
-      "target_sloc": 800
+      "target_functions": 35,
+      "target_sloc": 20000,
+      "manifest_functions": [
+        "driver_init", "register_driver", "unregister_driver", "probe_device", "remove_device",
+        "init_device", "shutdown_device", "suspend_device", "resume_device", "driver_open",
+        "driver_close", "driver_read", "driver_write", "driver_ioctl", "register_bus",
+        "unregister_bus", "scan_bus", "match_driver_device", "bind_driver", "unbind_driver",
+        "get_driver_by_name", "get_device_by_id", "allocate_device_resource",
+        "free_device_resource", "request_irq", "free_irq", "dma_alloc", "dma_free",
+        "dma_map", "dma_unmap", "create_device_node", "remove_device_node",
+        "driver_sysfs_add", "driver_sysfs_remove", "hal_init"
+      ]
     },
     "filesystem": {
-      "weight": 15,
+      "weight": 7,
       "criticality": "critical",
       "description": "Filesystem abstraction and implementation",
       "evidence_cues": [
@@ -207,11 +295,22 @@
         "close",
         "stat"
       ],
-      "target_functions": 35,
-      "target_sloc": 1500
+      "target_functions": 42,
+      "target_sloc": 25000,
+      "manifest_functions": [
+        "vfs_init", "register_filesystem", "unregister_filesystem", "mount", "unmount",
+        "vfs_open", "vfs_close", "vfs_read", "vfs_write", "vfs_lseek", "vfs_stat", "vfs_fstat",
+        "vfs_mkdir", "vfs_rmdir", "vfs_unlink", "vfs_rename", "vfs_link", "vfs_symlink",
+        "vfs_readlink", "vfs_chmod", "vfs_chown", "alloc_inode", "free_inode", "read_inode",
+        "write_inode", "dirty_inode", "delete_inode", "alloc_dentry", "free_dentry",
+        "lookup_dentry", "create_file", "delete_file", "truncate_file", "get_super_block",
+        "put_super_block", "sync_filesystem", "get_filesystem_stats", "path_walk",
+        "resolve_path", "canonicalize_path", "check_permission", "update_access_time",
+        "update_modify_time"
+      ]
     },
     "networking": {
-      "weight": 13,
+      "weight": 5,
       "criticality": "high",
       "description": "Network stack and protocols",
       "evidence_cues": [
@@ -224,11 +323,24 @@
         "packet",
         "skb"
       ],
-      "target_functions": 40,
-      "target_sloc": 2000
+      "target_functions": 58,
+      "target_sloc": 35000,
+      "manifest_functions": [
+        "net_init", "socket_create", "socket_bind", "socket_listen", "socket_accept",
+        "socket_connect", "socket_send", "socket_recv", "socket_sendto", "socket_recvfrom",
+        "socket_close", "socket_shutdown", "socket_setsockopt", "socket_getsockopt",
+        "packet_receive", "packet_transmit", "eth_init", "eth_send", "eth_receive",
+        "arp_init", "arp_lookup", "arp_resolve", "arp_update", "ip_init", "ip_send",
+        "ip_receive", "ip_forward", "ip_fragment", "ip_reassemble", "icmp_init",
+        "icmp_send", "icmp_receive", "udp_init", "udp_send", "udp_receive", "udp_checksum",
+        "tcp_init", "tcp_send", "tcp_receive", "tcp_connect", "tcp_accept", "tcp_close",
+        "tcp_retransmit", "tcp_ack", "tcp_checksum", "route_init", "route_add",
+        "route_delete", "route_lookup", "netif_init", "netif_register", "netif_unregister",
+        "netif_up", "netif_down", "skb_alloc", "skb_free", "skb_clone", "protocol_register"
+      ]
     },
     "ipc": {
-      "weight": 10,
+      "weight": 4,
       "criticality": "high",
       "description": "Inter-process communication mechanisms",
       "evidence_cues": [
@@ -240,10 +352,17 @@
         "signal"
       ],
       "target_functions": 18,
-      "target_sloc": 700
+      "target_sloc": 10000,
+      "manifest_functions": [
+        "ipc_init", "pipe_create", "pipe_read", "pipe_write", "pipe_close",
+        "mqueue_create", "mqueue_destroy", "mqueue_send", "mqueue_receive",
+        "shm_create", "shm_attach", "shm_detach", "shm_destroy", "signal_send",
+        "signal_handler_set", "signal_pending", "psystem_membrane_init",
+        "psystem_membrane_transport"
+      ]
     },
     "security": {
-      "weight": 12,
+      "weight": 3,
       "criticality": "critical",
       "description": "Security mechanisms and access control",
       "evidence_cues": [
@@ -253,13 +372,24 @@
         "capability",
         "selinux",
         "apparmor",
-        "credential"
+        "credential",
+        "crypto",
+        "attestation"
       ],
-      "target_functions": 22,
-      "target_sloc": 900
+      "target_functions": 30,
+      "target_sloc": 18000,
+      "manifest_functions": [
+        "security_init", "capability_init", "capability_check", "capability_grant",
+        "capability_revoke", "authenticate_user", "authenticate_process", "check_access",
+        "audit_log", "crypto_init", "hash_data", "verify_hash", "encrypt_data",
+        "decrypt_data", "generate_key", "sign_data", "verify_signature", "attestation_init",
+        "attest_boot", "attest_code", "verify_attestation", "create_secure_channel",
+        "credential_create", "credential_verify", "selinux_init", "selinux_check",
+        "apparmor_init", "apparmor_check", "acl_check", "acl_set"
+      ]
     },
     "power_management": {
-      "weight": 8,
+      "weight": 3,
       "criticality": "medium",
       "description": "Power management and ACPI",
       "evidence_cues": [
@@ -271,11 +401,18 @@
         "cpufreq",
         "idle"
       ],
-      "target_functions": 15,
-      "target_sloc": 600
+      "target_functions": 22,
+      "target_sloc": 12000,
+      "manifest_functions": [
+        "power_init", "set_power_state", "get_power_state", "suspend_system",
+        "resume_system", "hibernate", "shutdown", "reboot", "cpu_idle", "cpu_freq_set",
+        "cpu_freq_get", "device_suspend", "device_resume", "pm_register_device",
+        "pm_unregister_device", "battery_status", "ac_adapter_status", "thermal_monitor",
+        "set_sleep_state", "wake_event_register", "power_budget_init", "power_budget_update"
+      ]
     },
     "profiling": {
-      "weight": 5,
+      "weight": 2,
       "criticality": "low",
       "description": "Performance profiling and debugging support",
       "evidence_cues": [
@@ -286,14 +423,22 @@
         "ftrace",
         "debug"
       ],
-      "target_functions": 12,
-      "target_sloc": 400
+      "target_functions": 25,
+      "target_sloc": 15000,
+      "manifest_functions": [
+        "profiler_init", "profiler_start", "profiler_stop", "profiler_sample",
+        "profiler_report", "trace_init", "trace_event", "trace_function_enter",
+        "trace_function_exit", "trace_print", "kprobe_init", "kprobe_register",
+        "kprobe_unregister", "ftrace_init", "ftrace_enable", "ftrace_disable",
+        "perf_counter_init", "perf_counter_read", "perf_counter_reset", "debug_init",
+        "debug_print", "stack_trace", "memory_dump", "register_dump", "breakpoint_set"
+      ]
     }
   },
   "metadata": {
-    "version": "1.0",
-    "total_kernel_weight": 115,
-    "total_os_services_weight": 100,
-    "description": "Evaluation rubric for kernel primitives and OS platform services"
+    "version": "2.0",
+    "total_kernel_weight": 60,
+    "total_os_services_weight": 40,
+    "description": "Evaluation rubric for kernel primitives and OS platform services - updated with manifest target functions"
   }
 }
