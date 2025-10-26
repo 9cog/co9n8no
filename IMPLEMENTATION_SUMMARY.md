@@ -18,8 +18,10 @@ This document summarizes the enhancements made to the Kernel/OS Evaluation Syste
 **Example Enhancement:**
 ```markdown
 Before: | **Boot / initialisation** | **10** | ... | 12 functions (~5 k SLOC) |
-After:  | **Boot / initialisation** | **10** | ... | 12 functions (~5 k SLOC) | 
-        `boot_init`, `stage0_bootstrap`, `stage1_init`, ... (12 functions listed)
+After:  | **Boot / initialisation** | **10** | ... | 12 functions (~5 k SLOC) |
+        `boot_init`, `stage0_bootstrap`, `stage1_init`, `init_cpu`, `init_memory_early`,
+        `init_gdt`, `init_idt_early`, `load_kernel_image`, `parse_multiboot`,
+        `setup_initial_page_tables`, `enable_paging`, `jump_to_kernel`
 ```
 
 ### 2. ✅ Add Manifest Target Functions with Descriptions & Weights
