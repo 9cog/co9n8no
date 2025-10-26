@@ -48,10 +48,10 @@ Kernel primitives and OS services are evaluated separately, then combined:
 Weights are assigned based on criticality:
 
 - **Critical (15)**: Essential for basic OS operation
-  - Examples: Boot, Scheduling, Process/Thread Management, Virtual Memory, Filesystem
+  - Examples: Scheduling, Process/Thread Management, Virtual Memory, Filesystem
   
 - **High (10-13)**: Important for full functionality
-  - Examples: Interrupt Handling, System Calls, Synchronization, Networking
+  - Examples: Boot, Interrupt Handling, System Calls, Synchronization, Networking
   
 - **Medium (8)**: Useful but not essential
   - Examples: Timers/Clock, Power Management
