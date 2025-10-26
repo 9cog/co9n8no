@@ -1,0 +1,243 @@
+name: Generate Implementation Issues
+
+on:
+  workflow_dispatch:
+    inputs:
+      threshold:
+        description: 'Score threshold for task generation (0-100)'
+        required: false
+        default: '70.0'
+      dry_run:
+        description: 'Dry run (do not create issues)'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  generate-issues:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      issues: write
+      contents: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+      
+      - name: Check for required files
+        id: check_files
+        run: |
+          if [ -f "rubric.json" ] && [ -f "evaluate.py" ] && [ -f "generate_tasks.py" ]; then
+            echo "has_tools=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_tools=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Missing required files (rubric.json, evaluate.py, or generate_tasks.py)"
+          fi
+      
+      - name: Run evaluation
+        if: steps.check_files.outputs.has_tools == 'true'
+        run: |
+          echo "Running evaluation..."
+          python3 evaluate.py . rubric.json
+      
+      - name: Generate implementation tasks
+        if: steps.check_files.outputs.has_tools == 'true'
+        run: |
+          echo "Generating implementation tasks..."
+          python3 generate_tasks.py evaluation_results.json rubric.json ${{ github.event.inputs.threshold }}
+      
+      - name: Upload task report
+        if: steps.check_files.outputs.has_tools == 'true'
+        uses: actions/upload-artifact@v3
+        with:
+          name: implementation-tasks
+          path: implementation_tasks.json
+          retention-days: 90
+      
+      - name: Create GitHub Issues
+        if: steps.check_files.outputs.has_tools == 'true' && github.event.inputs.dry_run != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // Read the task report
+            const report = JSON.parse(fs.readFileSync('implementation_tasks.json', 'utf8'));
+            const tasks = report.tasks || {};
+            
+            console.log(`Creating issues for ${report.summary?.total_components || 0} components...`);
+            
+            // Helper function to create priority label
+            function getPriorityLabel(criticality) {
+              const mapping = {
+                'critical': 'priority: critical',
+                'high': 'priority: high',
+                'medium': 'priority: medium',
+                'low': 'priority: low'
+              };
+              return mapping[criticality] || 'priority: medium';
+            }
+            
+            // Helper function to get type label
+            function getTypeLabel(type) {
+              return type === 'kernel' ? 'type: kernel-primitive' : 'type: os-service';
+            }
+            
+            // Create issues for kernel primitives
+            for (const component of tasks.kernel_primitives || []) {
+              const title = `[Kernel] Implement ${component.component.replace(/_/g, ' ')}`;
+              
+              let body = `## Component: ${component.component.replace(/_/g, ' ')}\n\n`;
+              body += `**Description:** ${component.description}\n\n`;
+              body += `**Current Score:** ${component.current_score.toFixed(1)}%\n`;
+              body += `**Weight:** ${component.weight}\n`;
+              body += `**Criticality:** ${component.criticality}\n\n`;
+              
+              body += `### Gap Analysis\n\n`;
+              body += `- Functions: ${component.gap_analysis.functions_progress} (${component.gap_analysis.functions_gap} missing)\n`;
+              body += `- SLOC: ${component.gap_analysis.sloc_progress} (${component.gap_analysis.sloc_gap} missing)\n\n`;
+              
+              body += `### Implementation Tasks\n\n`;
+              
+              for (let i = 0; i < component.tasks.length; i++) {
+                const task = component.tasks[i];
+                body += `#### ${i + 1}. ${task.task}\n\n`;
+                body += `${task.description}\n\n`;
+                
+                if (task.functions && task.functions.length > 0) {
+                  body += `**Functions to implement:**\n`;
+                  for (const func of task.functions) {
+                    body += `- [ ] \`${func}\`\n`;
+                  }
+                  body += `\n`;
+                }
+                
+                if (task.details && task.details.length > 0) {
+                  body += `**Details:**\n`;
+                  for (const detail of task.details) {
+                    body += `- ${detail}\n`;
+                  }
+                  body += `\n`;
+                }
+              }
+              
+              body += `\n---\n`;
+              body += `*This issue was automatically generated from the kernel/OS evaluation.*\n`;
+              body += `*Threshold: ${report.metadata?.threshold || 70}%*\n`;
+              
+              const labels = [
+                getTypeLabel('kernel'),
+                getPriorityLabel(component.criticality),
+                'enhancement',
+                'auto-generated'
+              ];
+              
+              try {
+                const issue = await github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title: title,
+                  body: body,
+                  labels: labels
+                });
+                console.log(`Created issue #${issue.data.number}: ${title}`);
+              } catch (error) {
+                console.error(`Failed to create issue for ${component.component}: ${error.message}`);
+              }
+            }
+            
+            // Create issues for OS services
+            for (const component of tasks.os_services || []) {
+              const title = `[OS Service] Implement ${component.component.replace(/_/g, ' ')}`;
+              
+              let body = `## Component: ${component.component.replace(/_/g, ' ')}\n\n`;
+              body += `**Description:** ${component.description}\n\n`;
+              body += `**Current Score:** ${component.current_score.toFixed(1)}%\n`;
+              body += `**Weight:** ${component.weight}\n`;
+              body += `**Criticality:** ${component.criticality}\n\n`;
+              
+              body += `### Gap Analysis\n\n`;
+              body += `- Functions: ${component.gap_analysis.functions_progress} (${component.gap_analysis.functions_gap} missing)\n`;
+              body += `- SLOC: ${component.gap_analysis.sloc_progress} (${component.gap_analysis.sloc_gap} missing)\n\n`;
+              
+              body += `### Implementation Tasks\n\n`;
+              
+              for (let i = 0; i < component.tasks.length; i++) {
+                const task = component.tasks[i];
+                body += `#### ${i + 1}. ${task.task}\n\n`;
+                body += `${task.description}\n\n`;
+                
+                if (task.functions && task.functions.length > 0) {
+                  body += `**Functions to implement:**\n`;
+                  for (const func of task.functions) {
+                    body += `- [ ] \`${func}\`\n`;
+                  }
+                  body += `\n`;
+                }
+                
+                if (task.details && task.details.length > 0) {
+                  body += `**Details:**\n`;
+                  for (const detail of task.details) {
+                    body += `- ${detail}\n`;
+                  }
+                  body += `\n`;
+                }
+              }
+              
+              body += `\n---\n`;
+              body += `*This issue was automatically generated from the kernel/OS evaluation.*\n`;
+              body += `*Threshold: ${report.metadata?.threshold || 70}%*\n`;
+              
+              const labels = [
+                getTypeLabel('os_service'),
+                getPriorityLabel(component.criticality),
+                'enhancement',
+                'auto-generated'
+              ];
+              
+              try {
+                const issue = await github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title: title,
+                  body: body,
+                  labels: labels
+                });
+                console.log(`Created issue #${issue.data.number}: ${title}`);
+              } catch (error) {
+                console.error(`Failed to create issue for ${component.component}: ${error.message}`);
+              }
+            }
+            
+            console.log('✅ Issue creation complete');
+      
+      - name: Summary (Dry Run)
+        if: steps.check_files.outputs.has_tools == 'true' && github.event.inputs.dry_run == 'true'
+        run: |
+          echo "## Dry Run - No Issues Created" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          python3 << 'EOF'
+          import json
+          
+          with open('implementation_tasks.json', 'r') as f:
+              report = json.load(f)
+          
+          print(f"**Threshold:** {report['metadata']['threshold']}%")
+          print(f"**Components needing work:** {report['summary']['total_components']}")
+          print()
+          print("### Would create issues for:")
+          
+          for comp in report['tasks'].get('kernel_primitives', []):
+              print(f"- **[Kernel] {comp['component'].replace('_', ' ').title()}** - Score: {comp['current_score']:.1f}%")
+          
+          for comp in report['tasks'].get('os_services', []):
+              print(f"- **[OS Service] {comp['component'].replace('_', ' ').title()}** - Score: {comp['current_score']:.1f}%")
+          EOF
+          >> $GITHUB_STEP_SUMMARY

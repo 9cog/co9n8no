@@ -113,7 +113,9 @@ Performance profiling and debugging support.
 - Python 3.6 or higher
 - Source code to evaluate (C/C++/assembly files)
 
-### Running the Evaluation
+### Basic Evaluation
+
+Run an evaluation on a source directory:
 
 ```bash
 python3 evaluate.py <source_directory> [rubric.json]
@@ -131,6 +133,93 @@ The tool will:
 4. Calculate scores for each primitive and service
 5. Generate an overall evaluation score
 6. Save detailed results to `evaluation_results.json`
+
+### Generate Implementation Tasks
+
+After running an evaluation, generate actionable tasks:
+
+```bash
+python3 generate_tasks.py evaluation_results.json [rubric.json] [threshold]
+```
+
+Arguments:
+- `evaluation_results.json` - Path to evaluation results
+- `rubric.json` - Path to rubric file (default: rubric.json)
+- `threshold` - Score threshold for task generation (default: 70.0)
+
+Example:
+```bash
+python3 generate_tasks.py evaluation_results.json rubric.json 70.0
+```
+
+This will:
+1. Analyze evaluation results
+2. Identify components scoring below threshold
+3. Generate detailed implementation tasks for each component
+4. Save tasks to `implementation_tasks.json`
+
+### GitHub Actions Automation
+
+This repository includes two GitHub Actions workflows that can be copied to any repository:
+
+#### 1. Automatic Evaluation Workflow
+
+**File:** `.github/workflows/evaluate.yml`
+
+Runs automatically on:
+- Push to main/master/develop branches
+- Pull requests to main/master/develop
+- Manual trigger (workflow_dispatch)
+
+Features:
+- Evaluates the repository on every push/PR
+- Posts evaluation summary to PR comments
+- Uploads evaluation results as artifacts
+- Displays results in workflow summary
+
+#### 2. Issue Generation Workflow
+
+**File:** `.github/workflows/create-issues.yml`
+
+Runs manually via workflow_dispatch with options:
+- `threshold`: Score threshold for task generation (0-100, default: 70.0)
+- `dry_run`: Preview without creating issues (default: false)
+
+Features:
+- Generates implementation tasks from evaluation
+- Creates GitHub issues for each component needing work
+- Issues include detailed task breakdowns and checklists
+- Automatically labels issues by priority and type
+
+### Using in Your Repository
+
+To use this evaluation system in your own repository:
+
+1. **Copy required files:**
+   ```bash
+   cp rubric.json /path/to/your/repo/
+   cp evaluate.py /path/to/your/repo/
+   cp generate_tasks.py /path/to/your/repo/
+   cp -r .github/workflows /path/to/your/repo/.github/
+   ```
+
+2. **Commit the files:**
+   ```bash
+   cd /path/to/your/repo
+   git add rubric.json evaluate.py generate_tasks.py .github/workflows/
+   git commit -m "Add kernel/OS evaluation system"
+   git push
+   ```
+
+3. **Run evaluation:**
+   - Automatic: The evaluate workflow will run on your next push
+   - Manual: Go to Actions → "Kernel/OS Evaluation" → Run workflow
+
+4. **Generate issues (optional):**
+   - Go to Actions → "Generate Implementation Issues"
+   - Click "Run workflow"
+   - Choose threshold and dry_run options
+   - Review issues created or dry-run summary
 
 ### Scoring Methodology
 
@@ -163,11 +252,55 @@ The tool produces:
 
 ## Customizing the Rubric
 
+The `rubric.json` file defines the evaluation criteria. Each kernel primitive and OS service includes:
+
+### Component Structure
+
+```json
+{
+  "weight": 10,
+  "criticality": "critical",
+  "description": "Component description",
+  "evidence_cues": ["keyword1", "keyword2"],
+  "target_functions": 12,
+  "target_sloc": 5000,
+  "manifest_functions": [
+    "function1",
+    "function2"
+  ]
+}
+```
+
+### Fields
+
+- **weight**: Importance multiplier (higher = more important)
+- **criticality**: Priority level (critical, high, medium, low)
+- **description**: Human-readable description
+- **evidence_cues**: Keywords to search for in source code
+- **target_functions**: Expected number of functions
+- **target_sloc**: Expected lines of code
+- **manifest_functions**: List of specific function names expected
+
+### Manifest Functions
+
+The `manifest_functions` field lists the specific functions expected for each component. These are based on the Echo.Kern function manifest and include:
+
+- **Complete function names** for implementation reference
+- **Logical grouping** for task generation
+- **Best practices** from kernel development
+
+When generating tasks, functions are batched into logical groups to create manageable implementation steps.
+
+### Customization Options
+
 Edit `rubric.json` to modify:
 - Weights and criticality levels
 - Evidence cues (keywords to search for)
 - Target functions and SLOC counts
+- Manifest function lists
 - Add or remove primitives/services
+
+For detailed documentation of all manifest functions, see `rawrubric.md`.
 
 ## Example Output
 

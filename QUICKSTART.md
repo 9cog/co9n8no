@@ -14,17 +14,72 @@ No installation required! Just Python 3.6+.
 python3 evaluate.py /path/to/your/kernel/source
 ```
 
-### 2. View Results
+### 2. Generate Implementation Tasks
 
-The tool displays results in the console and saves detailed data to `evaluation_results.json`.
+```bash
+python3 generate_tasks.py evaluation_results.json rubric.json 70.0
+```
 
-### 3. Interpret Scores
+This generates actionable tasks for components scoring below 70%.
+
+### 3. View Results
+
+The tools display results in the console and save detailed data to:
+- `evaluation_results.json` - Detailed evaluation scores
+- `implementation_tasks.json` - Generated implementation tasks
+
+## GitHub Actions Integration
+
+Copy these files to any repository to enable automatic evaluation:
+
+```bash
+# Copy evaluation system
+cp rubric.json /path/to/repo/
+cp evaluate.py /path/to/repo/
+cp generate_tasks.py /path/to/repo/
+
+# Copy GitHub Actions (optional)
+cp -r .github/workflows /path/to/repo/.github/
+```
+
+### Automatic Evaluation
+
+The `evaluate.yml` workflow:
+- Runs on every push and PR
+- Posts evaluation summary to PR comments
+- Uploads results as artifacts
+
+### Issue Generation
+
+The `create-issues.yml` workflow:
+- Run manually via Actions tab
+- Creates GitHub issues for missing components
+- Includes detailed task breakdowns and checklists
+
+To use:
+1. Go to Actions → "Generate Implementation Issues"
+2. Click "Run workflow"
+3. Set threshold (default: 70.0) and dry_run option
+4. Review generated issues
+
+## Interpret Scores
+
+### Score Ranges
 
 - **90-100%**: Production-ready
 - **70-89%**: Well-developed
 - **50-69%**: Core features present
 - **30-49%**: Minimal/educational
 - **Below 30%**: Incomplete
+
+### Classification
+
+| Kernel Score | OS Score | Classification |
+|--------------|----------|----------------|
+| ≥60% | >40% | **Kernel-grade** |
+| 30-60% | Any | **Kernel-prototype** |
+| <30% | ≥50% | **OS-platform** |
+| <30% | <50% | **Application/other** |
 
 ## Example Walkthrough
 
