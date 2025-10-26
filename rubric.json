@@ -305,8 +305,7 @@
         "write_inode", "dirty_inode", "delete_inode", "alloc_dentry", "free_dentry",
         "lookup_dentry", "create_file", "delete_file", "truncate_file", "get_super_block",
         "put_super_block", "sync_filesystem", "get_filesystem_stats", "path_walk",
-        "resolve_path", "canonicalize_path", "check_permission", "update_access_time",
-        "update_modify_time"
+        "resolve_path", "canonicalize_path", "check_permission", "update_access_time"
       ]
     },
     "networking": {
