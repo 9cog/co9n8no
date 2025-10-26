@@ -2,4 +2,4 @@ I’ve prepared a detailed methodology that turns the Echo.Kern manifest and sta
 
 The scoring procedure multiplies a presence indicator (0/0.5/1) by a completeness ratio (functions found ÷ target) and the category’s weight, then normalises the totals to yield separate kernel and OS scores on a 0‑100 scale.  A classification table interprets these scores, distinguishing between kernel‑grade repositories, prototypes, OS‑platforms and application/other code.  The rubric also suggests extensions (sub‑weights, runtime tests, domain‑specific tweaks) and demonstrates a worked example.
 
-You can read the full rubric here: {{file:file-U1zVqsgwT5RsCEW6tQpiv9}}.
+You can read the full rubric here: [rubric-kern-os-plat.docx](rubric-kern-os-plat.docx).
