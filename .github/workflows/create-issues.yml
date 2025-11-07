@@ -54,7 +54,7 @@ jobs:
       
       - name: Upload task report
         if: steps.check_files.outputs.has_tools == 'true'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: implementation-tasks
           path: implementation_tasks.json
