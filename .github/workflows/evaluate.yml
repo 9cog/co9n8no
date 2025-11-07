@@ -1,0 +1,207 @@
+name: Kernel/OS Evaluation
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+  pull_request:
+    branches:
+      - main
+      - master
+      - develop
+  workflow_dispatch:
+    inputs:
+      target_directory:
+        description: 'Directory to evaluate (default: repository root)'
+        required: false
+        default: '.'
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+      
+      - name: Check for evaluation files
+        id: check_files
+        run: |
+          if [ -f "rubric.json" ] && [ -f "evaluate.py" ]; then
+            echo "has_evaluator=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_evaluator=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Run evaluation
+        if: steps.check_files.outputs.has_evaluator == 'true'
+        run: |
+          TARGET_DIR="${{ github.event.inputs.target_directory || '.' }}"
+          echo "Evaluating directory: $TARGET_DIR"
+          python3 evaluate.py "$TARGET_DIR" rubric.json
+      
+      - name: Upload evaluation results
+        if: steps.check_files.outputs.has_evaluator == 'true'
+        uses: actions/upload-artifact@v3
+        with:
+          name: evaluation-results
+          path: evaluation_results.json
+          retention-days: 90
+      
+      - name: Display summary
+        if: steps.check_files.outputs.has_evaluator == 'true'
+        run: |
+          if [ -f "evaluation_results.json" ]; then
+            echo "## Kernel/OS Evaluation Summary" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # Extract scores from JSON using Python
+            python3 << 'EOF'
+          import json
+          
+          with open('evaluation_results.json', 'r') as f:
+              results = json.load(f)
+          
+          summary = results.get('summary', {})
+          kernel_score = summary.get('kernel_primitives_score', 0)
+          os_score = summary.get('os_services_score', 0)
+          overall_score = summary.get('overall_score', 0)
+          files_scanned = summary.get('total_files_scanned', 0)
+          
+          print(f"**Kernel Primitives Score:** {kernel_score:.1f}%")
+          print(f"**OS Services Score:** {os_score:.1f}%")
+          print(f"**Overall Score:** {overall_score:.1f}%")
+          print(f"**Files Scanned:** {files_scanned}")
+          print()
+          
+          # Classification
+          if kernel_score >= 60 and os_score > 40:
+              classification = "Kernel-grade"
+          elif 30 <= kernel_score < 60:
+              classification = "Kernel-prototype"
+          elif kernel_score < 30 and os_score >= 50:
+              classification = "OS-platform"
+          else:
+              classification = "Application/other"
+          
+          print(f"**Classification:** {classification}")
+          print()
+          
+          # Top scoring primitives
+          print("### Top Kernel Primitives")
+          kernel_prims = results.get('kernel_primitives', {})
+          kernel_sorted = sorted(
+              kernel_prims.items(),
+              key=lambda x: x[1].get('scores', {}).get('overall', 0),
+              reverse=True
+          )[:5]
+          
+          for name, data in kernel_sorted:
+              score = data.get('scores', {}).get('overall', 0)
+              print(f"- **{name.replace('_', ' ').title()}**: {score:.1f}%")
+          
+          print()
+          print("### Top OS Services")
+          os_services = results.get('os_services', {})
+          os_sorted = sorted(
+              os_services.items(),
+              key=lambda x: x[1].get('scores', {}).get('overall', 0),
+              reverse=True
+          )[:5]
+          
+          for name, data in os_sorted:
+              score = data.get('scores', {}).get('overall', 0)
+              print(f"- **{name.replace('_', ' ').title()}**: {score:.1f}%")
+          EOF
+          fi >> $GITHUB_STEP_SUMMARY
+      
+      - name: Comment on PR
+        if: github.event_name == 'pull_request' && steps.check_files.outputs.has_evaluator == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            if (!fs.existsSync('evaluation_results.json')) {
+              return;
+            }
+            
+            const results = JSON.parse(fs.readFileSync('evaluation_results.json', 'utf8'));
+            const summary = results.summary || {};
+            
+            const kernelScore = summary.kernel_primitives_score || 0;
+            const osScore = summary.os_services_score || 0;
+            const overallScore = summary.overall_score || 0;
+            const filesScanned = summary.total_files_scanned || 0;
+            
+            let classification = "Application/other";
+            if (kernelScore >= 60 && osScore > 40) {
+              classification = "Kernel-grade";
+            } else if (kernelScore >= 30 && kernelScore < 60) {
+              classification = "Kernel-prototype";
+            } else if (kernelScore < 30 && osScore >= 50) {
+              classification = "OS-platform";
+            }
+            
+            const comment = `## 🔍 Kernel/OS Evaluation Results
+            
+            | Metric | Score |
+            |--------|-------|
+            | **Kernel Primitives** | ${kernelScore.toFixed(1)}% |
+            | **OS Services** | ${osScore.toFixed(1)}% |
+            | **Overall** | ${overallScore.toFixed(1)}% |
+            | **Classification** | ${classification} |
+            | **Files Scanned** | ${filesScanned} |
+            
+            <details>
+            <summary>📊 View detailed breakdown</summary>
+            
+            ### Kernel Primitives Details
+            
+            ${Object.entries(results.kernel_primitives || {})
+              .sort((a, b) => (b[1].scores?.overall || 0) - (a[1].scores?.overall || 0))
+              .map(([name, data]) => {
+                const score = data.scores?.overall || 0;
+                const funcs = data.functions || {};
+                const sloc = data.sloc || {};
+                return `- **${name.replace(/_/g, ' ')}**: ${score.toFixed(1)}% (${funcs.found}/${funcs.target} functions, ${sloc.found}/${sloc.target} SLOC)`;
+              })
+              .join('\n')}
+            
+            ### OS Services Details
+            
+            ${Object.entries(results.os_services || {})
+              .sort((a, b) => (b[1].scores?.overall || 0) - (a[1].scores?.overall || 0))
+              .map(([name, data]) => {
+                const score = data.scores?.overall || 0;
+                const funcs = data.functions || {};
+                const sloc = data.sloc || {};
+                return `- **${name.replace(/_/g, ' ')}**: ${score.toFixed(1)}% (${funcs.found}/${funcs.target} functions, ${sloc.found}/${sloc.target} SLOC)`;
+              })
+              .join('\n')}
+            
+            </details>
+            
+            📁 Full evaluation results are available as a workflow artifact.
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
